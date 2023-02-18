@@ -1,22 +1,9 @@
-const fs = require("fs");
-const path = require("path");
-const rootDir = require("../util/path");
-const Cart = require("./cart");
+const db = require('../util/database');
 
-const p = path.join(rootDir, "data", "products.json");
-
-const getProductsFromFile = (cb) => {
-  fs.readFile(p, (err, fileContent) => {
-    if (err) {
-      cb([]);
-    } else {
-      cb(JSON.parse(fileContent));
-    }
-  });
-};
+const Cart = require('./cart');
 
 module.exports = class Product {
-  constructor(title, imageUrl, description, price, id = null) {
+  constructor(id, title, imageUrl, description, price) {
     this.id = id;
     this.title = title;
     this.imageUrl = imageUrl;
@@ -25,44 +12,19 @@ module.exports = class Product {
   }
 
   save() {
-    getProductsFromFile((products) => {
-      const updatedProducts = [...products];
-      if (this.id) {
-        const existingProductIndex = products.findIndex(
-          (prod) => prod.id === this.id
-        );
-        updatedProducts[existingProductIndex] = this;
-      } else {
-        this.id = Math.random().toString();
-        updatedProducts.push(this);
-      }
-      fs.writeFile(p, JSON.stringify(updatedProducts), (err) => {
-        console.log(err);
-      });
-    });
+    return db.execute(
+      'INSERT INTO products (title, price, imageUrl, description) VALUES (?, ?, ?, ?)',
+      [this.title, this.price, this.imageUrl, this.description]
+    );
   }
 
-  static fetchAll(cb) {
-    getProductsFromFile(cb);
+  static deleteById(id) {}
+
+  static fetchAll() {
+    return db.execute('SELECT * FROM products');
   }
 
-  static findById(id, callback) {
-    getProductsFromFile((products) => {
-      const product = products.find((p) => p.id === id);
-      callback(product);
-    });
-  }
-
-  static deleteById(id, callback) {
-    getProductsFromFile((products) => {
-      const product = products.find((prod) => prod.id === id);
-      const updatedProducts = products.filter((prod) => prod.id !== id);
-      fs.writeFile(p, JSON.stringify(updatedProducts), (err) => {
-        if (!err) {
-          Cart.deleteProductById(id, product.price);
-        }
-      });
-      callback();
-    });
+  static findById(id) {
+    return db.execute('SELECT * FROM products WHERE products.id = ?', [id]);
   }
 };
