@@ -58,4 +58,7 @@ module.exports = class Cart {
       typeof callback === 'function' && callback();
     });
   }
+  static getCart(cb) {
+    getCartFromFile(cb);
+  }
 };
